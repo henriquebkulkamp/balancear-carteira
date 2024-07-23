@@ -63,7 +63,9 @@ Veja [DETALHES.md](DETALHES.md) para uma descrição aprofundada dos algoritmos 
 - Crie um novo Pull Request.
 
 ### Licença
-Este projeto está licenciado sob a Licença MIT - veja o arquivo LICENSE para mais detalhes.
+Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+O arquivo 'catch.hpp' incluido no repositório está liscenciado sob a Boost Software Liscense 1.0. Veja o arquivo [LICENSE_1_0.txt](LICENSE_1_0.txt) para mais detalhes.
 
 ### Autor
-Henrique Bloemer Kulkamp
+Henrique Bloemer Kulkamp (https://github.com/henriquebkulkamp/)
