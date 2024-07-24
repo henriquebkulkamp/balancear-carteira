@@ -3,8 +3,33 @@
 
 #include "../src/ativo/ativo.h"
 #include "../src/carteira/carteira.h"
+#include "../src/validator/constrained_number.h"
+
+TEST_CASE("Teste de validator") {
+    Constrained_number number_with_restrictions;
+    number_with_restrictions.non_negative();
+    number_with_restrictions = 5;
+    REQUIRE(number_with_restrictions.validate() == true);
+
+    number_with_restrictions = -1; // nao segue as restricoes
+    REQUIRE(number_with_restrictions.validate() == false);
+
+    number_with_restrictions.clear(); // nao tem mais restricoes
+    REQUIRE(number_with_restrictions.validate() == true);
+
+    Constrained_number number_without_value;
+    number_without_value.positive();
+    number_without_value.non_negative();
+
+    REQUIRE(number_without_value.validate() == false);
+}
 
 TEST_CASE("Teste de instancia da classe Ativo") {
+    try {
+        Ativo ativo_falho(-1, 10, 15);
+    } catch (const exception& e) {
+        REQUIRE(typeid(e) == typeid(invalid_argument));
+    }
     Ativo ativo1(100, 10, 5);
     Ativo ativo2(200, 20, 10);
     Ativo ativo3(1, 2, 3);
