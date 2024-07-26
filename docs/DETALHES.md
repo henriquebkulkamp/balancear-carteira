@@ -57,11 +57,13 @@ onde delta x é uma "nova quantidade de ações" * "valor unitário da ação".
 Portanto, a quantidade de novas ações para comprar é:  
 Seja:  
 - v: valor unitário  
-- q: quantidade de ações  
+- q: quantidade de ações
+- p: percentual do ativo na carteira
 - nq: quantidade de novas ações  
-- a: aporte  
+- a: aporte
+- NOTA: são os N ativos que foram selecionados!
 Então:  
-$`Err(q) = \sum\limits_{i=1}^n (v_i*)\cdot\frac{(q_i* - q_i)^2}{q_i*}`$  
+$`q \cdot v + qn \cdot v = ((\sum\limits_{i=1}^N q_i \cdot v_i) + a) \cdot \frac{p}{\sum\limits_{i=1}^N p_i} => qn = (\frac{(\sum\limits_{i=1}^N q_i \cdot v_i) + a)}{v} \cdot \frac{p}{\sum\limits_{i=1}^N p_i} - q)`$
 
 ### Ordem de magnitude de execução do algoritmo
 
@@ -69,19 +71,30 @@ Como será feita uma operação por ativo selecionado, e são N ativos, então a
 
 ## Arredondamento
 
-Como não existe 1/2 ação, ou 15.333... ações, deve ser feito um arredondamento. Esse arredondamento será feito para tentar encontrar o menor erro, com as seguintes variáveis:  
+Como não existe 1/2 ação, ou 15.333... ações, deve ser feito um arredondamento. Esse arredondamento será feito tentando minimizar a funcao de erro, com as seguintes variáveis:  
+
+### Escolha da função:
+Para se escolher uma função de erro de arredondamento para investimentos, ela deve ser:  
+- Relativa, pois, por exemplo, se um ativo devia ter 1.000 investido, e foi investido 900, se deixar parado 1 ano, deve recuperar. No entanto, se fosse para investir 200, e foi investido 100, dificilmente se torna 200 em 1 ano.  
+- Os erros para cima nao podem se anular com os de baixo, isto é, se era pra investir 100, e investiu 90, e em outro ativo, era para investir 100, e investiu 110, o erro final não pode ser 0.  
+- É melhor que a função seja fácil de calcular os pontos nela, por exemplo Err(5), Err(1)... e tambem ser facil de obter sua derivada e calcular em seus pontos.  
+
+E pelos motivos listados acima, a funcao de erro escolhida será:  
+- s* : total à investir ideal, em uma ação  
+- s : o que será investido em uma ação  
+$`Err(s) := \sum\limits_{i=1}^n \frac{(s_i* - s_i)^2}{s_i*}`$
+
+fazendo algumas manipulações algebricas, obtemos:  
+
 - s* : total à investir ideal, em uma ação  
 - s : o que será investido em uma ação  
 - v : valor unitario  
 - q* : quantidade de ações à comprar, ideal  
 - q : quantidade de ações que será comprada  
-A função de erro é definida como:  
-$`Err(q) := \sum\limits_{i=1}^n \frac{(s_i* - s_i)^2}{s_i*} => \sum\limits_{i=1}^n \frac{(v_i*\cdot q_i*) - (v_i*q_i))^2}{v_i*\cdot q_i*}
-=> \sum\limits_{i=1}^n (v_i*)\cdot\frac{(q_i* - q_i)^2}{q_i*}`$
-
-### Funcao de Erro
-Portanto, a funcao de erro é:  
-$`Err(q) = \sum\limits_{i=1}^n (v_i*) \cdot \frac{(q_i* - q_i)^2}{q_i*}`$  
+$`Err(s) = \sum\limits_{i=1}^n \frac{(s_i* - s_i)^2}{s_i*} => \sum\limits_{i=1}^n \frac{((v_i \cdot q_i*) - (v_i \cdot q_i))^2}{v_i \cdot q_i*}
+=> \sum\limits_{i=1}^n v_i \cdot\frac{(q_i* - q_i)^2}{q_i*}`$  
+E, como s = q*v, e o v é fixo, modificamos a funcao Err(s) para:  
+$`Err(q) = \sum\limits_{i=1}^n v_i \cdot \frac{(q_i* - q_i)^2}{q_i*}`$  
 
 ### Chute Inicial e Ajuste  
 O chute inicial será arredondar cada $`q_i*`$ para cima e ir decrementando de cada ativo, de forma que a combinação de cortes gere o menor erro possivel e o total a gastar seja menor do que o aporte.
@@ -110,7 +123,6 @@ graph TD;
 ```
 
 
-
 Nesse caso, o nó root representa todos os $`q_i*`$ arredondados para cima, o nó 1, representa o root, mas com $`q_1 - 1`$, o nó 12 representa o root, mas com $`q_1 - 1`$ e o $`q_2 - 1`$, e assim por diante.
 ### Complexidade da Busca
 Procurar pelo nó ideal via força bruta seria muito custoso, pois a ordem de complexidade seria O($`N^H`$), onde N é o número de ativos e H é a altura da árvore de nós.
@@ -120,8 +132,8 @@ Portanto, para encontrar a resposta mais rapidamente, será feita uma otimizaç�
 
 
 **1° passo, calcular o gradiente da funcao erro:**  
-  $`Err_i'(q) = \frac{d}{dq} (v*)*\frac{(q* - q)^2}{q*} => -2(v*)*\frac{(q*)-q}{q*} => (\frac{2v}{q*})*q - 2v `$  
-  ∴ $`Err_i'(q) = (\frac{2v}{q*})*q - 2v`$  
+  $`Err_i'(q) = \frac{d}{dq} (v*) \cdot \frac{(q* - q)^2}{q*} => -2(v*) \cdot \frac{(q*)-q}{q*} => (\frac{2v}{q*}) \cdot q - 2v `$  
+  ∴ $`Err_i'(q) = (\frac{2v}{q*}) \cdot q - 2v`$  
 
 
 
@@ -134,29 +146,29 @@ Portanto, para encontrar a resposta mais rapidamente, será feita uma otimizaç�
 
 **3° Encontrar o menor a, que faça com que o gasto extra seja menor ou igual a 0:**  
 Gasto extra referente ao arredondamento para cima é dado por: 
-  $`G = \sum\limits_{i=1}^N \lceil q_i* - q_i \rceil * v_i`$.  
+  $`G = \sum\limits_{i=1}^N \lceil q_i* \rceil - q_i \cdot v_i`$.  
 Equação completa:  
-$`(\sum\limits_{i=1}^N \lfloor a*\frac{q_i*}{2v_i} \rfloor * v_i) - (\sum\limits_{i=1}^N \lceil q_i* - q_i \rceil * v_i) \geq 0`$  
+$`(\sum\limits_{i=1}^N \lfloor a*\frac{q_i*}{2v_i} \rfloor \cdot v_i) - (\sum\limits_{i=1}^N \lceil q_i* \rceil - q_i \cdot v_i) \geq 0`$  
 
-onde: $`\lfloor a*\frac{q_i*}{2v_i} \rfloor`$ significa descontar uma ação, e: $`v_i`$ o valor, portanto:  
-$`(\sum\limits_{i=1}^N \lfloor a*\frac{q_i*}{2v_i} \rfloor * v_i)`$ significa a economia feita com os cortes de investimento.
+onde: $`\lfloor a \cdot \frac{q_i*}{2v_i} \rfloor`$ significa descontar uma ação, e: $`v_i`$ o valor, portanto:  
+$`(\sum\limits_{i=1}^N \lfloor a \cdot \frac{q_i*}{2v_i} \rfloor \cdot v_i)`$ significa a economia feita com os cortes de investimento.
 E se essa economia for maior do que o gasto extra, então dá para comprar as ações sem precisar fazer outro aporte.
 Quantidade de ações a comprar. Seja:  
 - r : vetor de quantidade de ações a comprar, arredondada para cima.
-- s : vetor de ações descontadas, obtidas atraves de $`\lfloor a*\frac{q_i*}{2v_i}\rfloor`$
+- s : vetor de ações descontadas, obtidas atraves de $`\lfloor a \cdot \frac{q_i*}{2v_i}\rfloor`$
 **vetor das ações a comprar: $`r-s`$**
 
 
 
 
 ### Resolvendo a equação:
-$`F(a) = (\sum\limits_{i=1}^N \lfloor a*\frac{q_i*}{2v_i} \rfloor * v_i) - (\sum\limits_{i=1}^N \lceil q_i* - q_i \rceil * v_i) \geq 0`$
+$`F(a) = (\sum\limits_{i=1}^N \lfloor a*\frac{q_i*}{2v_i} \rfloor * v_i) - (\sum\limits_{i=1}^N \lceil q_i* \rceil - q_i * v_i) \geq 0`$
 Como para resolver essa equação, de forma precisa para obter o menor a possivel, seria necessario usar um sistema de N equações, seria relativamente custoso, em comparação com usar uma heuristica de busca binaria com um chute incial, pois, se o menor a possivel faz com que a equação F(a) = b, um F(a+ε) = b, pois tem uma floor function envolvendo a. E para usar a heuristica, vamos:  
 
   
 1° encontrar um chte inicial:  
 como $`(\sum\limits_{i=1}^N \lfloor a*\frac{q_i*}{2v_i} \rfloor * v_i) \approx (\sum\limits_{i=1}^N (a*\frac{q_i*}{2v_i}) * v_i) = (\sum\limits_{i=1}^N a*\frac{q_i*}{2})`$  
-e $`(\sum\limits_{i=1}^N \lceil q_i* - q_i \rceil * v_i) \approx (\sum\limits_{i=1}^N \frac{1}{2} * v_i)`$
+e $`(\sum\limits_{i=1}^N \lceil q_i* \rceil - q_i * v_i) \approx (\sum\limits_{i=1}^N \frac{1}{2} * v_i)`$
 temos:  $`(\sum\limits_{i=1}^N a*\frac{q_i*}{2}) \approx (\sum\limits_{i=1}^N \frac{1}{2} * v_i)  
 => \frac{a}{2}*(\sum\limits_{i=1}^N q_i) \approx \frac{1}{2}*(\sum\limits_{i=1}^N v_i)  
 => a \approx \frac{\sum\limits_{i=1}^N v_i}{\sum\limits_{i=1}^N q_i}`$  <br><br>
@@ -168,3 +180,98 @@ temos:  $`(\sum\limits_{i=1}^N a*\frac{q_i*}{2}) \approx (\sum\limits_{i=1}^N \f
 Como para encontrar o menor a, são feitas log(N) operacoes na F(a), e para fazer uma operacao na F(a) são necessarias fazer N operácoes.  
 No pior caso, o a encontrado faz com que seja necessário vender uma ou mais ações, então seria necessário, remover esse ativo, da lista de ativos para investir, e recalcular a quantidade ótima para investir em cada ativo. E se após esse processo, perceber que deve se remover outro ativo, de novo e de novo, até que reste apenas um ativo.  
 Resultaria em um total de N*log(N) + (N-1)*log(N-1) + ... (2)*(log2) + (1*log(1)) = $`\frac{(N \cdot log(N))^2 - N \cdot log(N)}{2}`$ operações, com um O($`N^2 \cdot log(N)^2`$)
+
+### Exemplo:
+lista de ativos que receberao investimento:
+- v : valor unitário do ativo
+- q* : quantidade ideal de ativos para comprar
+  
+| Nome do ativo |   v   |   q*   |
+| ------------- |  ---  | ------ |
+| abce3         | 5.50  | 11.25  |
+| bcdg3         | 10.10 | 25.15  |
+| cdef3         | 10.00 | 12.01  |
+
+| Aporte |
+| ------ |
+| 437.00 |
+
+o root seria:
+(12; 26; 13)
+$`Err(root) = 5.50 \cdot (11.25-12)^2/11.25 + 10.10 \dot (25.15-26)^2/25.15 + 10.00 \dot (12.01-13)^2/12.01 \approx 1.3812`$  
+$`Custo = 12 \cdot 5.50 + 26 \cdot 10.10 + 13 \cdot 10.00 = 458.00 > Aporte`$  
+
+corte 1  
+(11; 26; 13)
+$`Err(1) = 5.50 \cdot (11.25-12)^2/11.25 + 10.10 \dot (25.12-26)^2/25.15 + 10.00 \dot (12.01-13)^2/12.01 \approx 1.137`$   
+$`Custo = 11 \cdot 5.50 + 26 \cdot 10.10 + 13 \cdot 10.00 = 453.10 > Aporte`$  
+
+corte 2  
+(12; 25; 13)  
+$`Err(2) = 5.50 \cdot (11.25-12)^2/11.25 + 10.10 \dot (25.12-25)^2/25.15 + 10.00 \dot (12.01-13)^2/12.01 \approx 1.100`$  
+$`Custo = 12 \cdot 5.50 + 25 \cdot 10.10 + 13 \cdot 10.00 = 448.50 > Aporte`$  
+
+corte 3  
+(12; 26; 12)  
+$`Err(3) = 5.50 \cdot (11.25-12)^2/11.25 + 10.10 \dot (25.12-26)^2/25.15 + 10.00 \dot (12.01-12)^2/12.01 \approx 0.5652`$  
+$`Custo = 12 \cdot 5.50 + 26 \cdot 10.10 + 12 \cdot 10.00 = 443.10 > Aporte`$  
+   
+corte 11  
+(10; 26; 13)  
+$`Err(11) = 5.50 \cdot (11.25-10)^2/11.25 + 10.10 \dot (25.12-26)^2/25.15 + 10.00 \dot (12.01-13)^2/12.01 \approx 1.8701`$    
+$`Custo = 10 \cdot 5.50 + 26 \cdot 10.10 + 13 \cdot 10.00 = 447.60 > Aporte`$  
+
+corte 12  
+(11; 25; 13)  
+$`Err(12) = 5.50 \cdot (11.25-11)^2/11.25 + 10.10 \dot (25.12-25)^2/25.15 + 10.00 \dot (12.01-13)^2/12.01 \approx 0.8566`$  
+$`Custo = 11 \cdot 5.50 + 25 \cdot 10.10 + 13 \cdot 10.00 = 443.00 > Aporte`$  
+
+corte 13  
+(11; 26; 12)  
+$`Err(13) = 5.50 \cdot (11.25-11)^2/11.25 + 10.10 \dot (25.12-26)^2/25.15 + 10.00 \dot (12.01-12)^2/12.01 \approx 0.3208`$  
+$`Custo = 11 \cdot 5.50 + 26 \cdot 10.10 + 12 \cdot 10.00 = 437.00 == Aporte`$  
+
+corte 21  
+(11; 25; 13)  
+$`Err(21) = 5.50 \cdot (11.25-11)^2/11.25 + 10.10 \dot (25.12-25)^2/25.15 + 10.00 \dot (12.01-13)^2/12.01 \approx 0.8566`$  
+$`Custo = 11 \cdot 5.50 + 25 \cdot 10.10 + 13 \cdot 10.00 = 443.00 > Aporte`$  
+
+corte 22  
+(12; 24; 13)  
+$`Err(22) = 5.50 \cdot (11.25-12)^2/11.25 + 10.10 \dot (25.12-24)^2/25.15 + 10.00 \dot (12.01-13)^2/12.01 \approx 1.6222`$  
+$`Custo = 12 \cdot 5.50 + 24 \cdot 10.10 + 13 \cdot 10.00 = 438.40 > Aporte`$  
+
+corte 23  
+(12; 25; 12)  
+$`Err(23) = 5.50 \cdot (11.25-12)^2/11.25 + 10.10 \dot (25.12-25)^2/25.15 + 10.00 \dot (12.01-12)^2/12.01 \approx 0.2841`$  
+$`Custo = 12 \cdot 5.50 + 25 \cdot 10.10 + 12 \cdot 10.00 = 438.50 > Aporte`$  
+
+corte 31  
+(11; 26; 12)  
+$`Err(31) = 5.50 \cdot (11.25-11)^2/11.25 + 10.10 \dot (25.12-26)^2/25.15 + 10.00 \dot (12.01-12)^2/12.01 \approx 0.3208`$  
+$`Custo = 11 \cdot 5.50 + 26 \cdot 10.10 + 12 \cdot 10.00 = 443.00 == Aporte`$  
+
+corte 32  
+(12; 25; 12)  
+$`Err(32) = 5.50 \cdot (11.25-12)^2/11.25 + 10.10 \dot (25.12-25)^2/25.15 + 10.00 \dot (12.01-12)^2/12.01 \approx 0.2841`$  
+$`Custo = 12 \cdot 5.50 + 25 \cdot 10.10 + 12 \cdot 10.00 = 438.50 > Aporte`$  
+
+corte 33  
+(12; 26; 11)  
+$`Err(33) = 5.50 \cdot (11.25-12)^2/11.25 + 10.10 \dot (25.12-26)^2/25.15 + 10.00 \dot (12.01-11)^2/12.01 \approx 1.4145`$  
+$`Custo = 12 \cdot 5.50 + 26 \cdot 10.10 + 11 \cdot 10.00 = 438.60 > Aporte`$  
+
+...  
+
+mesmo exemplo, mas com vetor:
+$`V = (11.25/(2 \cdot 5.50); 25.15/(2 \cdot 10.10); 12.01/(2 \cdot 10.00)) \approx (1.0227; 1.2450; 0.6005)`$
+
+$`Custo-extra = \lceil 12 - 11.25 \rceil * 5.50 + \lceil 26 - 25.15 \rceil * 10.10 + \lceil 13 - 12.01 \rceil * 10.00 = 22.61`$
+
+Revolvendo para a:
+$`\lfloor 1.0227 \cdot a \rfloor \cdot 5.50 + \lfloor 1.2450 \cdot a \rfloor \cdot 10.10 + \lfloor 0.6005 \cdot a \rfloor \cdot 10 \geq 22.61`$
+temos a = 1.245
+com um corte:
+133
+(11; 24; 13)
+Err(122) = 1.
